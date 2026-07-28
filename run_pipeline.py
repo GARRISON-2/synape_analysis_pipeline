@@ -232,6 +232,19 @@ class App:
                 font=("Arial", 12)).pack(pady=20)
 
 
+    def resolveFijiPath(self, path):
+        p = Path(path)
+        if p.suffix == ".app":
+            # try common executable locations inside the bundle
+            for candidate in [
+                p / "Contents/MacOS/ImageJ-macosx-arm64",
+                p / "Contents/MacOS/ImageJ-macosx",
+            ]:
+                if candidate.is_file():
+                    return str(candidate)
+        return path
+
+
     def runIJMScript(self, macro_path: str, arg: str, run_text: str, done_text: str, headless=True):
         tk.Label(self.content_frame, 
                  text=run_text, 
@@ -338,6 +351,8 @@ class App:
     def submitFijiDir(self, entry: str):
         # get the user input and strip white space and quots
         user_input = entry.get().strip().strip('"').strip("'")
+
+        user_input = self.resolveFijiPath(user_input)
 
         data_dict = {}
         # save the verified path to app data file for future sessions
