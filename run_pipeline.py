@@ -13,7 +13,7 @@ Description: Creates tkinter app instance to run synapse analysis pipeline.
 class App:
     def __init__(self, root):
         self.root = root      
-        self.root.geometry("600x400")
+        self.root.geometry("750x450")
         self._APP_HOME = Path(__file__).resolve().parent
         self._APP_DATA = self._APP_HOME / '.app_data'
         self.fiji_path = ""
@@ -43,30 +43,31 @@ class App:
     def checkFiji(self):
         data_dict = {}
 
-        # open data file and grab grab data
-        try:
-            with open(self._APP_DATA, 'r', encoding="utf-8") as ap:
-                csv_reader = csv.DictReader(ap, delimiter='\t')
-                for row in csv_reader:
-                    # use the 'id' column value as the dictionary key
-                    key = row.pop('id')  
-                    data_dict[key] = row
+        # if the fiji path has not already been set
+        if not self.fiji_path:
+            # open data file and grab grab data
+            try:
+                with open(self._APP_DATA, 'r', encoding="utf-8") as ap:
+                    csv_reader = csv.DictReader(ap, delimiter='\t')
+                    for row in csv_reader:
+                        # use the 'id' column value as the dictionary key
+                        key = row.pop('id')  
+                        data_dict[key] = row
 
-        except FileNotFoundError: # if the file was deleted or moved for some reason, then remake it
-            with open(self._APP_DATA, 'w', encoding="utf-8") as ap:
-                ap.write("id\tvalue")
-        
+            except FileNotFoundError: # if the file was deleted or moved for some reason, then remake it
+                with open(self._APP_DATA, 'w', encoding="utf-8") as ap:
+                    ap.write("id\tvalue")
+            
 
-        # check if a fiji path has been saved from a previous session
-        if "fiji_path" in data_dict:
-            # retrieve the previously saved path and save it 
-            self.fiji_path = data_dict["fiji_path"]["value"]
+            # check if a fiji path has been saved from a previous session
+            if "fiji_path" in data_dict:
+                # retrieve the previously saved path and save it 
+                self.fiji_path = data_dict["fiji_path"]["value"]
 
-            # form the first window and get the parent dir path
-            self.formWindow1()
-        else:
-            # no saved path found — prompt user to locate Fiji
-            self.formFijiWindow()
+            else:
+                # no saved path found — prompt user to locate Fiji
+                self.formFijiWindow()
+                return
 
 
         # verify the path points to a real executable file
@@ -74,10 +75,12 @@ class App:
 
             # file doesn't exist at saved path — may have moved or been uninstalled
             tk.Label(self.content_frame,
-                    text="Fiji not found at saved path. Please locate it again.\n Ensure path is .app or .exe, not a directory",
+                    text="File not found at saved path. Please locate it again.\n Ensure path is .app or .exe, not a directory",
                     fg="red").pack(pady=5)
+            self.root.update()
             
             self.formFijiWindow()
+            return
 
         # do a test run with --version to confirm Fiji actually launches correctly
         try:
@@ -87,6 +90,9 @@ class App:
             )
             if result.returncode != 0:
                 raise RuntimeError(f"Fiji returned non-zero exit code: {result}")
+
+            # success - form the first window and get the parent dir path
+            self.formWindow1()
             
         except (subprocess.TimeoutExpired, RuntimeError, OSError):
 
@@ -330,7 +336,8 @@ class App:
 
 
     def submitFijiDir(self, entry: str):
-        user_input = entry.get().strip()
+        # get the user input and strip white space and quots
+        user_input = entry.get().strip().strip('"').strip("'")
 
         data_dict = {}
         # save the verified path to app data file for future sessions
@@ -343,6 +350,7 @@ class App:
             for key, val in data_dict.items():
                 writer.writerow({"id": key, **val})
 
+        self.fiji_path = user_input
         self.checkFiji()
 
 
