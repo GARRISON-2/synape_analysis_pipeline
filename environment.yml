@@ -1,0 +1,8 @@
+name: syn_pl
+channels:
+  - defaults
+dependencies:
+  - python
+  - scipy
+  - tk
+  - pandas

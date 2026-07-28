@@ -79,7 +79,7 @@ macro "02 Make Masks From Z Projects" {
     logFile = parentDir + "debug_log.txt";
 
     // debug log
-    File.saveString("filePath: " + filePath + "\nparentDir: " + parentDir, logFile);
+    //File.saveString("filePath: " + filePath + "\nparentDir: " + parentDir, logFile);
 
     
     // --------------------------------------------------
@@ -154,10 +154,51 @@ macro "02 Make Masks From Z Projects" {
 
     setBatchMode(false);
 
+    // --------------------------------------------------
+    // Open masks for visual inspection
+    // --------------------------------------------------
+
+    // open one example mask from each channel/z-group for inspection
+    openFirstMask(dirC2_13, "Bassoon 1-3");
+    openFirstMask(dirC3_13, "Gephyrin 1-3");
+    openFirstMask(dirC4_13, "PSD95 1-3");
+
+    // pause and wait for user to inspect and approve
+    waitForUser("Inspect Masks", 
+        "Check the masks for Bassoon, Gephyrin, and PSD95.\n\n" +
+        "When you are happy with the masks, click OK to continue.");
+
+    // close all open mask images before continuing
+    run("Close All");
+
     print("----------------------------------------");
     print("DONE.");
     print("Masks saved in:");
     print(dirMasks);
+}
+
+
+// ==================================================
+// FUNCTION: openFirstMask
+// ==================================================
+
+function openFirstMask(maskDir, label) {
+    if (!File.exists(maskDir)) {
+        print("WARNING: Could not open masks for inspection - folder not found: " + maskDir);
+        return;
+    }
+
+    fileList = getFileList(maskDir);
+
+    for (i = 0; i < fileList.length; i++) {
+        if (endsWith(fileList[i], ".tif") || endsWith(fileList[i], ".tiff")) {
+            open(maskDir + fileList[i]);
+            rename(label + " - " + fileList[i]);
+            return; // only open the first one
+        }
+    }
+
+    print("WARNING: No .tif files found in: " + maskDir);
 }
 
 

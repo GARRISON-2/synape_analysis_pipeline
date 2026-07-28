@@ -129,12 +129,12 @@ class App:
 
         tk.Label(self.content_frame, text="ROI ID, e.g. ROI_01:").pack(padx=10, pady=5)
         self.roi_entry = tk.Entry(self.content_frame, width=20)
-        self.layer_entry.insert(0, "ROI_01")
+        self.roi_entry.insert(0, "ROI_01")
         self.roi_entry.pack(padx=10, pady=5)
 
         tk.Label(self.content_frame, text="Region, optional, e.g. ACC:").pack(padx=10, pady=5)
         self.region_entry = tk.Entry(self.content_frame, width=20)
-        self.layer_entry.insert(0, "ACC")
+        self.region_entry.insert(0, "ACC")
         self.region_entry.pack(padx=10, pady=5)
 
         tk.Button(self.content_frame, text="OK", width=8,
@@ -192,6 +192,11 @@ class App:
         
         # grab the current unprocessed file
         current_file = self.fs_path_list[self.cur_index]
+
+        # create parent output dir for current file
+        cur_out_dir = current_file.parent.parent / (current_file.stem + "_outputs") 
+        cur_out_dir.mkdir(parents=True, exist_ok=True)
+        self.out_dir = self.toFijiPath(str(cur_out_dir))
         
         tk.Label(self.content_frame,
                 text=f"Processing {current_file.name} ({self.cur_index + 1} of {len(self.fs_path_list)})",
@@ -201,64 +206,18 @@ class App:
         
         # run the pipeline on the current file
         self.runIJMScript(self.macro_paths[0].as_posix(), 
-                          run_text=f"Running 01: {self.macro_paths[0]}",
+                          run_text=f"Running 01: {self.macro_paths[0].name}",
                           arg = f"{self.fs_path_list[self.cur_index]};{self.out_dir}",
                           done_text="Step 01 Ran") # step 1
+        
         self.runIJMScript(self.macro_paths[1].as_posix(), 
                           arg = f"{self.fs_path_list[self.cur_index]};{self.out_dir}",
-                          run_text=f"Running 02: {self.macro_paths[1]}",
+                          run_text=f"Running 02: {self.macro_paths[1].name}",
                           done_text="Step 02 Ran",
                           headless=False) # step 2
         
-        # prompt for ROIs
+        # prompt for ROIs and initiate next steps when done
         self.formROIWindow()
-        
-        self.runIJMScript(self.macro_paths[2].as_posix(), 
-                          run_text=f"Running 03: {self.macro_paths[2]}",
-                          arg = ";".join([
-                                self.fs_path_list[self.cur_index],
-                                self.out_dir,
-                                self.roi_data["layer"],
-                                self.roi_data["roi_id"],
-                                self.roi_data["region"]
-                            ]),
-                          done_text="Step 03 Ran",
-                          headless=False) # step 3
-        self.runIJMScript(self.macro_paths[3].as_posix(), 
-                          run_text=f"Running 04: {self.macro_paths[3]}",
-                          arg = f"{self.fs_path_list[self.cur_index]};{self.out_dir}",
-                          done_text="Step 04 Ran",
-                          headless=False) # step 4
-        self.runIJMScript(self.macro_paths[4].as_posix(), 
-                          run_text=f"Running 05: {self.macro_paths[4]}",
-                          arg = ";".join([
-                                self.fs_path_list[self.cur_index],
-                                self.out_dir,
-                                self.roi_data["layer"],
-                                self.roi_data["roi_id"],
-                                self.roi_data["region"]
-                            ]),
-                          done_text="Step 05 Ran",
-                          headless=False) # step 5
-        
-        # run python scripts
-        self.runPythonScript(self.macro_paths[5].as_posix(),
-                             run_text=f"Running 06: {self.macro_paths[5]}",
-                             done_text="Step 06 Ran",
-        )
-        self.runPythonScript(self.macro_paths[6].as_posix(),
-                            run_text=f"Running 12: {self.macro_paths[6]}",
-                            done_text="Step 07 Ran",
-            
-        )
-        self.runPythonScript(self.macro_paths[7].as_posix(),
-                             run_text=f"Running 13: {self.macro_paths[7]}",
-                             done_text="Step 08 Ran",
-        )
-
-        self.cur_index += 1
-        self.clearScreen()
-        self.processNextFile()
 
 
     def pipelineComplete(self):
@@ -287,7 +246,7 @@ class App:
             
 
         print("Running:", cmd)
-        result = subprocess.run(cmd, capture_output=True, text=True)
+        result = subprocess.run(cmd, capture_output=False, text=True)
         print("STDOUT:", result.stdout)
         print("STDERR:", result.stderr)
         print("Return code:", result.returncode)
@@ -318,6 +277,56 @@ class App:
         self.formStepDoneWindow(done_text)
 
         pass
+
+
+    def runPostManualSteps(self):
+        self.runIJMScript(self.macro_paths[2].as_posix(), 
+                    run_text=f"Running 03: {self.macro_paths[2].name}",
+                    arg = ";".join([
+                        str(self.fs_path_list[self.cur_index]),
+                        self.out_dir,
+                        self.roi_data["layer"],
+                        self.roi_data["roi_id"],
+                        self.roi_data["region"]
+                    ]),
+                    done_text="Step 03 Ran",
+                    headless=False) # step 3
+        
+        self.runIJMScript(self.macro_paths[3].as_posix(), 
+                          run_text=f"Running 04: {self.macro_paths[3].name}",
+                          arg = f"{self.fs_path_list[self.cur_index]};{self.out_dir}",
+                          done_text="Step 04 Ran") # step 4
+        
+        self.runIJMScript(self.macro_paths[4].as_posix(), 
+                          run_text=f"Running 05: {self.macro_paths[4].name}",
+                          arg = ";".join([
+                                str(self.fs_path_list[self.cur_index]),
+                                self.out_dir,
+                                self.roi_data["layer"],
+                                self.roi_data["roi_id"],
+                                self.roi_data["region"]
+                            ]),
+                          done_text="Step 05 Ran") # step 5
+        
+        # run python scripts
+        self.runPythonScript(self.macro_paths[5],
+                             run_text=f"Running 06: {self.macro_paths[5].name}",
+                             done_text="Step 06 Ran",
+        )
+        self.runPythonScript(self.macro_paths[6],
+                            run_text=f"Running 12: {self.macro_paths[6].name}",
+                            done_text="Step 07 Ran",
+            
+        )
+        self.runPythonScript(self.macro_paths[7],
+                             run_text=f"Running 13: {self.macro_paths[7].name}",
+                             done_text="Step 08 Ran",
+        )
+
+        # prepare for next tif file
+        self.cur_index += 1
+        self.clearScreen()
+        self.processNextFile()
 
 
     def submitFijiDir(self, entry: str):
@@ -388,6 +397,9 @@ class App:
             "region": self.region_entry.get().strip()
         }
         self.clearScreen()
+
+        # resume pipeline
+        self.runPostManualSteps()
 
 
     def toFijiPath(self, path: str):

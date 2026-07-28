@@ -81,6 +81,7 @@
 // produced incorrect Jaccard values.
 //
 // ==================================================
+var logFile;
 
 requires("1.53");
 
@@ -101,27 +102,16 @@ macro "05 Marker Pixel Overlap Analysis FIXED" {
         parentDir = parentDir + "/";
     }
 
-    if (nImages == 0) {
-        if (filePath == "") {
-            exit("ERROR: No image open and no path argument provided.");
-        }
-        open(filePath);
-    }
-
     logFile = parentDir + "debug_log.txt";
 
     // debug log
-    File.saveString("filePath: " + filePath + "\nparentDir: " + parentDir, logFile);
+    //File.saveString("filePath: " + filePath + "\nparentDir: " + parentDir, logFile);
 
     dirMasks = parentDir + "06_Masks/";
 
     if (!File.exists(dirMasks)) {
         exit("ERROR: Missing mask folder:\n" + dirMasks);
     }
-
-    // --------------------------------------------------
-    // Ask for ROI metadata
-    // --------------------------------------------------
 
     regionSafe = cleanForFilename(regionName);
     layerSafe = cleanForFilename(layerName);

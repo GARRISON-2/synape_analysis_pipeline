@@ -70,6 +70,8 @@
 //
 // ==================================================
 
+var logFile;
+
 requires("1.53");
 
 macro "04 Associate Markers From Coordinates 0p5um Final" {
@@ -86,17 +88,10 @@ macro "04 Associate Markers From Coordinates 0p5um Final" {
         parentDir = parentDir + "/";
     }
 
-    if (nImages == 0) {
-        if (filePath == "") {
-            exit("ERROR: No image open and no path argument provided.");
-        }
-        open(filePath);
-    }
-
     logFile = parentDir + "debug_log.txt";
 
     // debug log
-    File.saveString("filePath: " + filePath + "\nparentDir: " + parentDir, logFile);
+    //File.saveString("filePath: " + filePath + "\nparentDir: " + parentDir, logFile);
 
     inputCSV = parentDir + "07_Individual_Marker_Analysis/01_Results/individual_puncta_coordinates.csv";
 

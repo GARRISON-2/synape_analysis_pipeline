@@ -126,6 +126,7 @@
 //      cross-marker spatial association
 //
 // ==================================================
+var logFile;
 
 requires("1.53");
 
@@ -146,17 +147,10 @@ macro "03 Analyze Individual Marker Puncta With Layer ROI" {
         parentDir = parentDir + "/";
     }
 
-    if (nImages == 0) {
-        if (filePath == "") {
-            exit("ERROR: No image open and no path argument provided.");
-        }
-        open(filePath);
-    }
-
     logFile = parentDir + "debug_log.txt";
 
     // debug log
-    File.saveString("filePath: " + filePath + "\nparentDir: " + parentDir, logFile);
+    //File.saveString("filePath: " + filePath + "\nparentDir: " + parentDir, logFile);
 
     // --------------------------------------------------
     // Ask for layer and ROI metadata
@@ -238,6 +232,9 @@ macro "03 Analyze Individual Marker Puncta With Layer ROI" {
     File.append("Layer: " + layerName, logFile);
     File.append("ROI_ID: " + roiID, logFile);
 
+    File.append("dirMasks path: " + dirMasks, logFile);
+    File.append("dirMasks exists: " + File.exists(dirMasks), logFile);
+
     setBatchMode(true);
 
     // --------------------------------------------------
@@ -292,6 +289,7 @@ macro "03 Analyze Individual Marker Puncta With Layer ROI" {
     File.append(dirOverlays, logFile);
     File.append("ROI sets:", logFile);
     File.append(dirROIs, logFile);
+    run("Quit")
 }
 
 
@@ -348,9 +346,9 @@ function analyzeOneMask(maskDir, fileName, channel, marker, zGroup,
 
     maskTitle = getTitle();
     baseName = removeExtension(fileName);
-
+    
     // Make sure image is 8-bit.
-    run("8-bit");
+    //run("8-bit");
     setOption("BlackBackground", true);
     run("Select None");
 
@@ -366,6 +364,9 @@ function analyzeOneMask(maskDir, fileName, channel, marker, zGroup,
     // The numeric calibration is treated as microns per pixel.
     pixelWidthUm = pixelWidth;
     pixelHeightUm = pixelHeight;
+
+    // manually set properties for current mask
+    run("Properties...", "unit=um pixel_width=" + pixelWidthUm + " pixel_height=" + pixelHeightUm + " voxel_depth=1");
 
     ROI_width_um = imageWidthPixels * pixelWidthUm;
     ROI_height_um = imageHeightPixels * pixelHeightUm;
@@ -392,11 +393,11 @@ function analyzeOneMask(maskDir, fileName, channel, marker, zGroup,
     run("Set Measurements...", "area centroid perimeter shape feret's redirect=None decimal=6");
 
     run("Clear Results");
-    roiManager("Reset");
 
     // --------------------------------------------------
     // Analyze particles
     // --------------------------------------------------
+    setThreshold(128, 255);
 
     particleOptions =
         "size=" + minSize + "-" + maxSize +
@@ -405,7 +406,7 @@ function analyzeOneMask(maskDir, fileName, channel, marker, zGroup,
     run("Analyze Particles...", particleOptions);
 
     punctaCount = nResults();
-
+    File.append("punctaCount: " + punctaCount, logFile);
     // --------------------------------------------------
     // Collect individual puncta values
     // --------------------------------------------------
@@ -473,6 +474,8 @@ function analyzeOneMask(maskDir, fileName, channel, marker, zGroup,
             fileName + "\n";
 
         File.append(individualRow, individualCSV);
+
+        File.append("MADE IT PAST!", logFile);
     }
 
     // --------------------------------------------------
@@ -525,13 +528,13 @@ function analyzeOneMask(maskDir, fileName, channel, marker, zGroup,
     // --------------------------------------------------
 
     roiZipName =
-        imageID + "_" +
-        regionSafe + "_" +
-        layerSafe + "_" +
-        roiSafe + "_" +
-        channel + "_" +
-        marker + "_" +
-        zGroup + "_ROIs.zip";
+    imageID + "_" +
+    regionSafe + "_" +
+    layerSafe + "_" +
+    roiSafe + "_" +
+    channel + "_" +
+    marker + "_" +
+    zGroup + "_ROIs.zip";
 
     if (punctaCount > 0) {
         roiManager("Save", dirROIs + roiZipName);
@@ -554,7 +557,6 @@ function analyzeOneMask(maskDir, fileName, channel, marker, zGroup,
 
     run("Duplicate...", "title=[" + qcTitle + "] duplicate");
     selectWindow(qcTitle);
-
     run("RGB Color");
 
     if (punctaCount > 0) {
@@ -562,9 +564,7 @@ function analyzeOneMask(maskDir, fileName, channel, marker, zGroup,
     }
 
     run("Flatten");
-
     saveAs("Tiff", dirOverlays + qcTitle + ".tif");
-
     close();
 
     if (isOpen(maskTitle)) {
