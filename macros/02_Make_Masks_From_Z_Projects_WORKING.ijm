@@ -175,6 +175,7 @@ macro "02 Make Masks From Z Projects" {
     print("DONE.");
     print("Masks saved in:");
     print(dirMasks);
+    run("Quit")
 }
 
 

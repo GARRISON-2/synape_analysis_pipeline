@@ -3,6 +3,8 @@ channels:
   - defaults
 dependencies:
   - python
+  - tk
+  - numpy
   - scipy
   - tk
   - pandas
