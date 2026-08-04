@@ -3,13 +3,26 @@ Python TKinter application for running [CruzMartinsLab's](https://github.com/Cru
 
 
 ## Setup
-
-After cloning the repository, the python environment can be set up using conda. Navigate to the repo directory and create the conda environment.
-(If conda is not installed, instructions for setting it up can be found [here](https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html))
-
 ```bash
-$ conda env create -f environment.yml
+git clone https://github.com/Cruz-Martin-Lab/synape_analysis_pipeline.git
+
+cd synapse_analsys_pipeline
+```  
+
+### For Windows users:
 ```
+.\win_setup.bat
+```
+Or double click win_setup.bat in file explorer.
+
+### For Mac users:
+```
+chmod +x setup.sh
+
+./mac_setup.sh
+```
+<br>
+
 
 Fiji is also a requirement. If not already installed, setup information can be found [here](https://imagej.net/software/fiji/).
 
@@ -26,15 +39,11 @@ Before running the pipeline, ensure you have formatted an input/output directory
 NOTE - Even if you are only running a single .tif through the pipeline,it is still recommended to structure it like this.
 
 ## Usage
-
-Run the following conda command to activate the corresponding environment.
+To run the python application.
 ```bash
-$ conda activate syn_pl
-```  
+conda activate syn_pl
 
-Then run the python application.
-```bash
-$ python run_pipeline.py
+python run_pipeline.py
 ```
 
 The application will then prompt for the full path to your installed fiji installation. (Windows will be .exe, Mac will be .app)

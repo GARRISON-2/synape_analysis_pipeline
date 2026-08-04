@@ -325,22 +325,17 @@ class App:
                                 self.roi_data["roi_id"],
                                 self.roi_data["region"]
                             ]),
-                          done_text="Step 05 Ran") # step 5
+                          done_text=f"Step 05 Ran") # step 5
+
         
         # run python scripts
-        self.runPythonScript(self.macro_paths[5],
-                             run_text=f"Running 06: {self.macro_paths[5].name}",
-                             done_text="Step 06 Ran",
-        )
-        self.runPythonScript(self.macro_paths[6],
-                            run_text=f"Running 12: {self.macro_paths[6].name}",
-                            done_text="Step 07 Ran",
-            
-        )
-        self.runPythonScript(self.macro_paths[7],
-                             run_text=f"Running 13: {self.macro_paths[7].name}",
-                             done_text="Step 08 Ran",
-        )
+        for f in self.macro_paths[5:]:
+            if f.suffix == ".py":
+                self.runPythonScript(f,
+                                    run_text=f"Running {f.name[:2]}: {f.name}",
+                                    done_text=f"Step {f.name[:2]} Ran",
+                )
+
 
         # prepare for next tif file
         self.cur_index += 1
