@@ -1,6 +1,7 @@
 from pathlib import Path
 import subprocess
 import tkinter as tk
+import argparse
 import csv
 
 """
@@ -11,8 +12,10 @@ Description: Creates tkinter app instance to run synapse analysis pipeline.
 """
 
 class App:
-    def __init__(self, root):
-        self.root = root      
+    def __init__(self, root, debug):
+        self.root = root     
+        self.debug = debug 
+        self.headless = not debug
         self.root.geometry("750x450")
         self._APP_HOME = Path(__file__).resolve().parent
         self._APP_DATA = self._APP_HOME / '.app_data'
@@ -214,7 +217,8 @@ class App:
         self.runIJMScript(self.macro_paths[0].as_posix(), 
                           run_text=f"Running 01: {self.macro_paths[0].name}",
                           arg = f"{self.fs_path_list[self.cur_index]};{self.out_dir}",
-                          done_text="Step 01 Ran") # step 1
+                          done_text="Step 01 Ran",
+                          headless=self.headless) # step 1
         
         self.runIJMScript(self.macro_paths[1].as_posix(), 
                           arg = f"{self.fs_path_list[self.cur_index]};{self.out_dir}",
@@ -314,7 +318,8 @@ class App:
         self.runIJMScript(self.macro_paths[3].as_posix(), 
                           run_text=f"Running 04: {self.macro_paths[3].name}",
                           arg = f"{self.fs_path_list[self.cur_index]};{self.out_dir}",
-                          done_text="Step 04 Ran") # step 4
+                          done_text="Step 04 Ran",
+                          headless=self.headless) # step 4
         
         self.runIJMScript(self.macro_paths[4].as_posix(), 
                           run_text=f"Running 05: {self.macro_paths[4].name}",
@@ -325,7 +330,8 @@ class App:
                                 self.roi_data["roi_id"],
                                 self.roi_data["region"]
                             ]),
-                          done_text=f"Step 05 Ran") # step 5
+                          done_text=f"Step 05 Ran",
+                          headless=self.headless) # step 5
 
         
         # run python scripts
@@ -432,9 +438,16 @@ class App:
         return path
 
 
+def main():
+    parser = argparse.ArgumentParser(description="Synapse Analysis Pipeline")
+    parser.add_argument("--debug", 
+                        action="store_true", 
+                        help="Run in debug mode — Fiji windows stay open, verbose output")
+    args = parser.parse_args()
 
+    root = tk.Tk()
+    app = App(root, debug=args.debug)
+    root.mainloop()
 
 if __name__ == "__main__":
-    root = tk.Tk()
-    app = App(root)
-    root.mainloop()
+    main()
