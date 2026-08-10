@@ -178,6 +178,7 @@ macro "05 Marker Pixel Overlap Analysis FIXED" {
     File.append(summaryCSV, logFile);
     File.append("Overlap masks:", logFile);
     File.append(dirOverlapMasks, logFile);
+    run("Quit")
 }
 
 

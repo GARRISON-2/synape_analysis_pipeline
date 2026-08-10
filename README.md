@@ -31,8 +31,8 @@ Before running the pipeline, ensure you have formatted an input/output directory
 ```
 ├── output_dir/      
 │   ├── full_stack_img_dir/ 
-│   │   └── L23_0001.tif
-│   │   └── L23_0002.tif
+│   │   └── L00_0001.tif
+│   │   └── L00_0002.tif
 │   │   └── ...
 ```
 

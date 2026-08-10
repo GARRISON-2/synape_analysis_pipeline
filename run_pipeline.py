@@ -1,6 +1,7 @@
 from pathlib import Path
 import subprocess
 import tkinter as tk
+import argparse
 import csv
 
 """
@@ -11,8 +12,10 @@ Description: Creates tkinter app instance to run synapse analysis pipeline.
 """
 
 class App:
-    def __init__(self, root):
-        self.root = root      
+    def __init__(self, root, debug):
+        self.root = root     
+        self.debug = debug 
+        self.headless = not debug
         self.root.geometry("750x450")
         self._APP_HOME = Path(__file__).resolve().parent
         self._APP_DATA = self._APP_HOME / '.app_data'
@@ -45,41 +48,32 @@ class App:
 
         # if the fiji path has not already been set
         if not self.fiji_path:
-            # open data file and grab grab data
             try:
                 with open(self._APP_DATA, 'r', encoding="utf-8") as ap:
                     csv_reader = csv.DictReader(ap, delimiter='\t')
                     for row in csv_reader:
-                        # use the 'id' column value as the dictionary key
                         key = row.pop('id')  
                         data_dict[key] = row
 
-            except FileNotFoundError: # if the file was deleted or moved for some reason, then remake it
+            except FileNotFoundError:
                 with open(self._APP_DATA, 'w', encoding="utf-8") as ap:
                     ap.write("id\tvalue")
-            
 
-            # check if a fiji path has been saved from a previous session
             if "fiji_path" in data_dict:
-                # retrieve the previously saved path and save it 
                 self.fiji_path = data_dict["fiji_path"]["value"]
-
             else:
-                # no saved path found — prompt user to locate Fiji
                 self.formFijiWindow()
                 return
 
-
         # verify the path points to a real executable file
         if not Path(self.fiji_path).is_file():
-
-            # file doesn't exist at saved path — may have moved or been uninstalled
+            self.fiji_path = ""  # reset so checkFiji doesn't skip the form next time
+            self.clearScreen()
             tk.Label(self.content_frame,
-                    text="File not found at saved path. Please locate it again.\n Ensure path is .app or .exe, not a directory",
+                    text="File not found. Please locate Fiji again.\nEnsure path points to the executable, not a directory.",
                     fg="red").pack(pady=5)
             self.root.update()
-            
-            self.formFijiWindow()
+            self.formFijiWindow(show_form=False)  # don't clear screen, just add form below error
             return
 
         # do a test run with --version to confirm Fiji actually launches correctly
@@ -89,19 +83,29 @@ class App:
                 capture_output=True, text=True, timeout=15
             )
             if result.returncode != 0:
-                raise RuntimeError(f"Fiji returned non-zero exit code: {result}")
+                raise RuntimeError(f"Fiji returned non-zero exit code")
 
-            # success - form the first window and get the parent dir path
+            # success
             self.formWindow1()
-            
-        except (subprocess.TimeoutExpired, RuntimeError, OSError):
 
-            # path exists but Fiji won't launch — prompt user again
+        except subprocess.TimeoutExpired:
+            self.fiji_path = ""  # reset path
+            self.clearScreen()
+            tk.Label(self.content_frame,
+                    text="Fiji timed out on launch. Please locate it again.",
+                    fg="red").pack(pady=5)
+            self.root.update()
+            self.formFijiWindow(show_form=False)
+
+        except (RuntimeError, OSError):
+            self.fiji_path = ""  # reset path
+            self.clearScreen()
             tk.Label(self.content_frame,
                     text="Fiji could not be launched. Please locate it again.",
                     fg="red").pack(pady=5)
-            
-            self.formFijiWindow()
+            self.root.update()
+            self.formFijiWindow(show_form=False)
+
 
 
     def clearScreen(self):
@@ -109,9 +113,9 @@ class App:
             widget.destroy()
 
 
-    def formFijiWindow(self):
-        # clear screen before forming window
-        self.clearScreen()
+    def formFijiWindow(self, show_form=True):
+        if show_form:
+            self.clearScreen()  # only clear if not showing below an error
 
         inner_frame = tk.Frame(self.content_frame)
         inner_frame.pack(pady=20)
@@ -121,8 +125,8 @@ class App:
         fs_path_entry.pack(side="left", padx=5)    
         
         tk.Button(self.content_frame, 
-                  text="Submit", 
-                  command=lambda: self.submitFijiDir(fs_path_entry)).pack(pady=5)
+                text="Submit", 
+                command=lambda: self.submitFijiDir(fs_path_entry)).pack(pady=5)
 
 
     def formROIWindow(self):
@@ -214,7 +218,8 @@ class App:
         self.runIJMScript(self.macro_paths[0].as_posix(), 
                           run_text=f"Running 01: {self.macro_paths[0].name}",
                           arg = f"{self.fs_path_list[self.cur_index]};{self.out_dir}",
-                          done_text="Step 01 Ran") # step 1
+                          done_text="Step 01 Ran",
+                          headless=self.headless) # step 1
         
         self.runIJMScript(self.macro_paths[1].as_posix(), 
                           arg = f"{self.fs_path_list[self.cur_index]};{self.out_dir}",
@@ -314,7 +319,8 @@ class App:
         self.runIJMScript(self.macro_paths[3].as_posix(), 
                           run_text=f"Running 04: {self.macro_paths[3].name}",
                           arg = f"{self.fs_path_list[self.cur_index]};{self.out_dir}",
-                          done_text="Step 04 Ran") # step 4
+                          done_text="Step 04 Ran",
+                          headless=self.headless) # step 4
         
         self.runIJMScript(self.macro_paths[4].as_posix(), 
                           run_text=f"Running 05: {self.macro_paths[4].name}",
@@ -325,7 +331,8 @@ class App:
                                 self.roi_data["roi_id"],
                                 self.roi_data["region"]
                             ]),
-                          done_text=f"Step 05 Ran") # step 5
+                          done_text=f"Step 05 Ran",
+                          headless=self.headless) # step 5
 
         
         # run python scripts
@@ -365,14 +372,14 @@ class App:
 
 
     def submitFSDir(self, entry: str):
-        user_input = entry.get().strip()
+        user_input = entry.get().strip().strip('"').strip("'")  # strip whitespace and quotes
         user_input = self.toFijiPath(user_input)
 
         if not Path(user_input).is_dir():
             # show inline error rather than crashing
             tk.Label(self.content_frame, 
-                     text=f"Dirextory Path: {user_input} not found. Please check and try again.", 
-                     fg="red").pack()
+                    text=f"Dirextory Path: {user_input} not found. Please check and try again.", 
+                    fg="red").pack()
             return
         
         # ensure string has trailing slash for compatibility with ijm scripts
@@ -394,7 +401,7 @@ class App:
 
 
     def submitOutDir(self, entry: str):
-        user_input = entry.get().strip()
+        user_input = entry.get().strip().strip('"').strip("'")  # strip whitespace and quotes
         user_input = self.toFijiPath(user_input)
 
         if not Path(user_input).is_dir():
@@ -432,9 +439,16 @@ class App:
         return path
 
 
+def main():
+    parser = argparse.ArgumentParser(description="Synapse Analysis Pipeline")
+    parser.add_argument("--debug", 
+                        action="store_true", 
+                        help="Run in debug mode — Fiji windows stay open, verbose output")
+    args = parser.parse_args()
 
+    root = tk.Tk()
+    app = App(root, debug=args.debug)
+    root.mainloop()
 
 if __name__ == "__main__":
-    root = tk.Tk()
-    app = App(root)
-    root.mainloop()
+    main()
