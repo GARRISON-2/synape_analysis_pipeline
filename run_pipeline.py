@@ -107,7 +107,6 @@ class App:
             self.formFijiWindow(show_form=False)
 
 
-
     def clearScreen(self):
         for widget in self.content_frame.winfo_children():
             widget.destroy()

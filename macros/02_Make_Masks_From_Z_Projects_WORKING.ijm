@@ -69,12 +69,12 @@ macro "02 Make Masks From Z Projects" {
         parentDir = parentDir + "/";
     }
 
-    if (nImages == 0) {
-        if (filePath == "") {
-            exit("ERROR: No image open and no path argument provided.");
-        }
-        open(filePath);
-    }
+    // if (nImages == 0) {
+    //     if (filePath == "") {
+    //         exit("ERROR: No image open and no path argument provided.");
+    //     }
+    //     open(filePath);
+    // }
 
     logFile = parentDir + "debug_log.txt";
 
@@ -170,6 +170,10 @@ macro "02 Make Masks From Z Projects" {
 
         setBatchMode(false);
 
+
+        // open original image for reference
+        open(filePath);
+
         // --------------------------------------------------
         // Open one example mask per channel for inspection
         // --------------------------------------------------
@@ -182,13 +186,13 @@ macro "02 Make Masks From Z Projects" {
         // Ask user to inspect and optionally re-run
         // --------------------------------------------------
 
-        Dialog.create("Inspect Masks");
-        Dialog.addMessage(
+        waitForUser("Inspect Masks",
             "Inspect the masks for Bassoon, Gephyrin, and PSD95.\n\n" +
-            "If the masks look correct, click OK to continue.\n" +
-            "To retry with different threshold methods, change the\n" +
-            "selections below and check 'Re-run with new settings'."
-        );
+            "When ready, click OK to choose whether to continue or re-run.");
+
+        // now show the re-run dialog after user is done inspecting
+        Dialog.create("Continue or Re-run?");
+        Dialog.addMessage("Are you happy with the masks?");
         Dialog.addChoice("Bassoon (C2) method:",  methods, methodBassoon);
         Dialog.addChoice("Gephyrin (C3) method:", methods, methodGephyrin);
         Dialog.addChoice("PSD95 (C4) method:",    methods, methodPSD95);
@@ -200,7 +204,6 @@ macro "02 Make Masks From Z Projects" {
         methodPSD95    = Dialog.getChoice();
         rerun          = Dialog.getCheckbox();
 
-        // close inspection images before next iteration or continuing
         run("Close All");
 
     } while (rerun);

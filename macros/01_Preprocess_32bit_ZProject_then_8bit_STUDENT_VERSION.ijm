@@ -215,7 +215,7 @@ macro "01 Preprocess 32bit ZProject then 8bit" {
     File.append("8-bit Z projections 1-3 saved to: " + dirZ13_8, logFile);
     File.append("8-bit Z projections 4-6 saved to: " + dirZ46_8, logFile);
     File.append("8-bit Z projections 7-9 saved to: " + dirZ79_8, logFile);
-    run("Quit")
+    run("Quit");
 }
 
 

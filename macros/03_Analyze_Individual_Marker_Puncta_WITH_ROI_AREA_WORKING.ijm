@@ -289,7 +289,7 @@ macro "03 Analyze Individual Marker Puncta With Layer ROI" {
     File.append(dirOverlays, logFile);
     File.append("ROI sets:", logFile);
     File.append(dirROIs, logFile);
-    run("Quit")
+    run("Quit");
 }
 
 
@@ -475,7 +475,6 @@ function analyzeOneMask(maskDir, fileName, channel, marker, zGroup,
 
         File.append(individualRow, individualCSV);
 
-        File.append("MADE IT PAST!", logFile);
     }
 
     // --------------------------------------------------
