@@ -419,6 +419,7 @@ macro "04 Associate Markers From Coordinates 0p5um Final" {
     File.append(bassoonCSV, logFile);
     File.append("Final 0.5 um association summary table:", logFile);
     File.append(summaryCSV, logFile);
+    run("Quit")
 }
 
 

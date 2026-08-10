@@ -78,10 +78,6 @@ macro "02 Make Masks From Z Projects" {
 
     logFile = parentDir + "debug_log.txt";
 
-    // debug log
-    //File.saveString("filePath: " + filePath + "\nparentDir: " + parentDir, logFile);
-
-    
     // --------------------------------------------------
     // Define input folders
     // --------------------------------------------------
@@ -142,40 +138,79 @@ macro "02 Make Masks From Z Projects" {
     print("Starting mask generation.");
     print("Parent folder: " + parentDir);
 
-    setBatchMode(true);
-
     // --------------------------------------------------
-    // Process each Z projection folder
+    // Set default threshold methods per marker
     // --------------------------------------------------
 
-    processZFolder(dirZ13, "1_3", dirC2_13, dirC3_13, dirC4_13);
-    processZFolder(dirZ46, "4_6", dirC2_46, dirC3_46, dirC4_46);
-    processZFolder(dirZ79, "7_9", dirC2_79, dirC3_79, dirC4_79);
-
-    setBatchMode(false);
+    methodBassoon  = "Triangle";
+    methodGephyrin = "Moments";
+    methodPSD95    = "Triangle";
 
     // --------------------------------------------------
-    // Open masks for visual inspection
+    // Threshold method options for dialog
     // --------------------------------------------------
 
-    // open one example mask from each channel/z-group for inspection
-    openFirstMask(dirC2_13, "Bassoon 1-3");
-    openFirstMask(dirC3_13, "Gephyrin 1-3");
-    openFirstMask(dirC4_13, "PSD95 1-3");
+    methods = newArray("Triangle", "Moments", "Huang", "Otsu", "Default",
+                       "Li", "MaxEntropy", "Mean", "MinError(I)", "Minimum",
+                       "Percentile", "RenyiEntropy", "Shanbhag", "Yen",
+                       "Intermodes", "IsoData");
 
-    // pause and wait for user to inspect and approve
-    waitForUser("Inspect Masks", 
-        "Check the masks for Bassoon, Gephyrin, and PSD95.\n\n" +
-        "When you are happy with the masks, click OK to continue.");
+    // --------------------------------------------------
+    // Main loop — generate masks, inspect, re-run if needed
+    // --------------------------------------------------
 
-    // close all open mask images before continuing
-    run("Close All");
+    do {
+
+        setBatchMode(true);
+
+        // process each Z projection folder with current methods
+        processZFolder(dirZ13, "1_3", dirC2_13, dirC3_13, dirC4_13, methodBassoon, methodGephyrin, methodPSD95);
+        processZFolder(dirZ46, "4_6", dirC2_46, dirC3_46, dirC4_46, methodBassoon, methodGephyrin, methodPSD95);
+        processZFolder(dirZ79, "7_9", dirC2_79, dirC3_79, dirC4_79, methodBassoon, methodGephyrin, methodPSD95);
+
+        setBatchMode(false);
+
+        // --------------------------------------------------
+        // Open one example mask per channel for inspection
+        // --------------------------------------------------
+
+        openFirstMask(dirC2_13, "Bassoon 1-3");
+        openFirstMask(dirC3_13, "Gephyrin 1-3");
+        openFirstMask(dirC4_13, "PSD95 1-3");
+
+        // --------------------------------------------------
+        // Ask user to inspect and optionally re-run
+        // --------------------------------------------------
+
+        Dialog.create("Inspect Masks");
+        Dialog.addMessage(
+            "Inspect the masks for Bassoon, Gephyrin, and PSD95.\n\n" +
+            "If the masks look correct, click OK to continue.\n" +
+            "To retry with different threshold methods, change the\n" +
+            "selections below and check 'Re-run with new settings'."
+        );
+        Dialog.addChoice("Bassoon (C2) method:",  methods, methodBassoon);
+        Dialog.addChoice("Gephyrin (C3) method:", methods, methodGephyrin);
+        Dialog.addChoice("PSD95 (C4) method:",    methods, methodPSD95);
+        Dialog.addCheckbox("Re-run with new settings", false);
+        Dialog.show();
+
+        methodBassoon  = Dialog.getChoice();
+        methodGephyrin = Dialog.getChoice();
+        methodPSD95    = Dialog.getChoice();
+        rerun          = Dialog.getCheckbox();
+
+        // close inspection images before next iteration or continuing
+        run("Close All");
+
+    } while (rerun);
 
     print("----------------------------------------");
     print("DONE.");
     print("Masks saved in:");
     print(dirMasks);
-    run("Quit")
+
+    run("Quit");
 }
 
 
@@ -219,7 +254,7 @@ function openFirstMask(maskDir, label) {
 //
 // ==================================================
 
-function processZFolder(inputDir, zLabel, outC2, outC3, outC4) {
+function processZFolder(inputDir, zLabel, outC2, outC3, outC4, methodBassoon, methodGephyrin, methodPSD95) {
 
     fileList = getFileList(inputDir);
 
@@ -241,19 +276,19 @@ function processZFolder(inputDir, zLabel, outC2, outC3, outC4) {
 
             // C2 Bassoon
             if (indexOf(fileName, "_C2_Bassoon_") >= 0) {
-                makeMask(inputDir, fileName, "Triangle", outC2);
+                makeMask(inputDir, fileName, methodBassoon, outC2);
                 continue;
             }
 
             // C3 Gephyrin
             if (indexOf(fileName, "_C3_Gephyrin_") >= 0) {
-                makeMask(inputDir, fileName, "Moments", outC3);
+                makeMask(inputDir, fileName, methodGephyrin, outC3);
                 continue;
             }
 
             // C4 PSD95
             if (indexOf(fileName, "_C4_PSD95_") >= 0) {
-                makeMask(inputDir, fileName, "Triangle", outC4);
+                makeMask(inputDir, fileName, methodPSD95, outC4);
                 continue;
             }
 
